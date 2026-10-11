@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#140d27">
+<title>Ozora Navigator</title>
+<style>
+:root{--bg:#100b1e;--panel:#1b1430;--panel2:#251b3d;--line:#3b2b5a;--txt:#f7f1ff;--muted:#b9adcf;--pink:#ff4ecb;--cyan:#4be6e6;--gold:#ffd36b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#2c1748 0,#100b1e 55%);color:var(--txt);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:22px 18px 15px;position:sticky;top:0;background:#100b1eee;backdrop-filter:blur(12px);z-index:5;border-bottom:1px solid var(--line)}
+.brand{font-weight:900;letter-spacing:.04em;font-size:1.25rem}.brand span{color:var(--pink)}.sub{font-size:.82rem;color:var(--muted);margin-top:4px}
+nav{display:flex;gap:8px;padding:12px 14px;overflow:auto;position:sticky;top:84px;background:#100b1eee;z-index:4}
+nav button,.chip{white-space:nowrap;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--txt);padding:10px 14px;font-weight:700}
+nav button.active{background:var(--pink);border-color:var(--pink);color:#20091f}
+main{padding:4px 14px 40px;max-width:760px;margin:auto}.view{display:none}.view.active{display:block}
+.card{background:linear-gradient(145deg,#211633,#181126);border:1px solid var(--line);border-radius:18px;padding:16px;margin:10px 0}
+h2{font-size:1.12rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}
+p{line-height:1.45;color:var(--muted)}label{display:block;color:var(--muted);font-size:.88rem;margin:12px 0 5px}
+input,select,textarea{width:100%;padding:12px;border-radius:11px;border:1px solid var(--line);background:#100b1e;color:var(--txt);font:inherit}
+button.primary{width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(90deg,var(--pink),#a78bfa);color:#1c1028;font-weight:900;font-size:1rem;margin-top:12px}
+button.secondary{padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--txt);font-weight:700}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1;min-width:0}
+.event{border-left:4px solid var(--pink);padding:12px;background:#211633;border-radius:12px;margin:9px 0}
+.event .time{color:var(--cyan);font-weight:900}.event .meta{font-size:.85rem;color:var(--muted);margin-top:4px}
+.event button{margin-top:8px;margin-right:5px}.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+#mapImage{width:100%;height:auto;display:block;border-radius:12px;max-height:58vh;object-fit:contain;background:#100b1e}
+.status{padding:10px 12px;background:#151025;border-radius:10px;color:var(--muted);font-size:.9rem;margin-top:10px}
+small{color:var(--muted)}.hidden{display:none!important}.filebox{border:1px dashed var(--line);padding:12px;border-radius:12px}
+footer{text-align:center;padding:20px;color:var(--muted);font-size:.78rem}
+</style>
+</head>
+<body>
+<header><div class="brand">✦ OZORA <span>NAVIGATOR</span></div><div class="sub">Dein persönlicher Festivalplan · offline-orientiert</div></header>
+<nav>
+<button class="active" data-view="plan">Mein Plan</button><button data-view="stages">Stages</button><button data-view="map">Karte & GPS</button><button data-view="import">Timetable laden</button>
+</nav>
+<main>
+<section class="view active" id="plan">
+<div class="card"><h2>Dein nächstes Set</h2><div id="nextEvent" class="empty">Noch keine Sets gespeichert. Füge unten einen Act hinzu oder importiere einen Timetable.</div></div>
+<div class="card"><h2>＋ Set zu meinem Plan</h2>
+<label>Künstler / Act</label><input id="artist" placeholder="z. B. Lieblings-Act">
+<div class="row"><div><label>Stage</label><select id="stage"><option>Main Stage</option><option>Dome</option><option>Pumpui</option><option>Dragon Nest</option><option>Andere</option></select></div><div><label>Datum</label><input id="date" type="date"></div></div>
+<div class="row"><div><label>Beginn</label><input id="start" type="time" value="22:00"></div><div><label>Ende (optional)</label><input id="end" type="time"></div></div>
+<label>Erinnerung</label><select id="alarm"><option value="0">Keine Erinnerung</option><option value="5">5 Minuten vorher</option><option value="15" selected>15 Minuten vorher</option><option value="30">30 Minuten vorher</option><option value="60">60 Minuten vorher</option></select>
+<button class="primary" id="addEvent">Set speichern</button>
+<div class="status" id="alarmStatus">Erinnerungen: Bitte Benachrichtigungen erlauben. Für zuverlässige Alarme auch bei gesperrtem Handy ist später eine native Android-Version sinnvoll.</div>
+</div>
+<div class="card"><div class="row"><h2>Deine gespeicherten Sets</h2><select id="filterStage" aria-label="Stage filtern"><option value="all">Alle Stages</option><option>Main Stage</option><option>Dome</option><option>Pumpui</option><option>Dragon Nest</option><option>Andere</option></select></div><div id="events"></div></div>
+</section>
+<section class="view" id="stages">
+<div class="card"><h2>Stage-Reiter</h2><p>Wähle eine Stage, um deinen persönlichen Timetable dafür zu sehen. Du kannst weitere Bühnen beim Anlegen eines Sets unter „Andere“ notieren.</p><div id="stageButtons" class="row" style="flex-wrap:wrap"></div></div>
+<div class="card"><h2 id="stageHeading">Main Stage</h2><div id="stageEvents"></div></div>
+</section>
+<section class="view" id="map">
+<div class="card"><h2>Offline-Geländekarte</h2><p>Lade eine gespeicherte Ozora-Karte als Bild hoch. Die Datei bleibt auf diesem Gerät. GPS kann deinen Standort ermitteln, aber die Position kann ohne Kalibrierung nicht automatisch exakt auf das Kartenbild gelegt werden.</p>
+<div class="filebox"><label for="mapFile">Karte auswählen (JPG/PNG/WebP)</label><input id="mapFile" type="file" accept="image/*"></div>
+<div id="mapWrap" class="hidden" style="margin-top:12px"><img id="mapImage" alt="Deine gespeicherte Festival-Karte"><button class="secondary" id="removeMap" style="margin-top:8px">Karte entfernen</button></div>
+<button class="primary" id="locate">◎ Meinen GPS-Standort ermitteln</button><div id="gpsStatus" class="status">Standort noch nicht abgefragt.</div>
+<div class="status"><b>Noch nötig für echte Wegführung:</b> verlässliche Bühnen-Koordinaten und eine kalibrierte Geländekarte bzw. offline nutzbare Wege. Sobald diese Daten vorhanden sind, kann die Navigation von deinem Standort zur ausgewählten Stage ergänzt werden.</div>
+</div>
+</section>
+<section class="view" id="import">
+<div class="card"><h2>Timetable importieren</h2><p>Du kannst den offiziellen Timetable hier ablegen und in der App offline ansehen. Die erste Version speichert die Datei auf deinem Gerät; automatische Texterkennung aus PDF/Bildern ist noch nicht eingebaut. Die Acts kannst du unten im Plan manuell übernehmen.</p>
+<label>Datei auswählen (PDF, Bild, CSV, Excel)</label><input id="timetableFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.csv,.xls,.xlsx,application/pdf,image/*">
+<div id="importStatus" class="status">Noch keine Datei ausgewählt.</div><div id="filePreview"></div>
+</div>
+<div class="card"><h2>So geht's</h2><p>1. Timetable-Datei auswählen.<br>2. Künstler, Stage, Datum und Startzeit im Tab „Mein Plan“ eintragen.<br>3. Erinnerung auswählen und speichern.<br>4. Die Sets erscheinen in deinem persönlichen Plan und im passenden Stage-Reiter.</p></div>
+</section>
+</main>
+<footer>Ozora Navigator · lokale Testversion · Deine Einträge bleiben auf diesem Gerät, solange Browserdaten nicht gelöscht werden.</footer>
+<script>
+const $=id=>document.getElementById(id);
+let events=JSON.parse(localStorage.getItem('ozoraEvents')||'[]');
+let selectedStage='Main Stage';
+function save(){localStorage.setItem('ozoraEvents',JSON.stringify(events));render();}
+function dateTime(e){return new Date(`${e.date}T${e.start||'00:00'}:00`);}
+function render(){
+ const filter=$('filterStage').value;
+ const list=[...events].sort((a,b)=>dateTime(a)-dateTime(b)).filter(e=>filter==='all'||e.stage===filter);
+ $('events').innerHTML=list.length?list.map(e=>eventHtml(e)).join(''):'<div class="empty">Noch keine Sets für diese Auswahl.</div>';
+ const now=new Date();const next=[...events].filter(e=>dateTime(e)>=now).sort((a,b)=>dateTime(a)-dateTime(b))[0];
+ $('nextEvent').innerHTML=next?`<div class="time">${escapeHtml(next.date)} · ${escapeHtml(next.start)}</div><h3 style="margin-top:7px">${escapeHtml(next.artist)}</h3><div class="meta">${escapeHtml(next.stage)}${next.end?' · bis '+escapeHtml(next.end):''}</div>`:'<div class="empty">Kein zukünftiges Set gespeichert.</div>';
+ $('stageHeading').textContent=selectedStage;
+ const ss=events.filter(e=>e.stage===selectedStage).sort((a,b)=>dateTime(a)-dateTime(b));
+ $('stageEvents').innerHTML=ss.length?ss.map(e=>eventHtml(e)).join(''):'<div class="empty">Für diese Stage gibt es noch keine Sets.</div>';
+}
+function eventHtml(e){return `<div class="event"><div class="time">${escapeHtml(e.date)} · ${escapeHtml(e.start)}${e.end?'–'+escapeHtml(e.end):''}</div><h3>${escapeHtml(e.artist)}</h3><div class="meta">${escapeHtml(e.stage)} · Erinnerung: ${e.alarm?e.alarm+' Min vorher':'aus'}</div><button class="secondary" onclick="deleteEvent('${e.id}')">Entfernen</button></div>`}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+window.deleteEvent=id=>{events=events.filter(e=>e.id!==id);save();};
+$('addEvent').onclick=async()=>{
+ const artist=$('artist').value.trim(),date=$('date').value,start=$('start').value;
+ if(!artist||!date||!start){alert('Bitte Künstler, Datum und Beginn eintragen.');return;}
+ const stage=$('stage').value,alarm=Number($('alarm').value);
+ events.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),artist,date,start,end:$('end').value,stage,alarm});
+ save();$('artist').value='';
+ if(alarm&&'Notification'in window){try{if(Notification.permission==='default')await Notification.requestPermission();}catch(e){}}
+ $('alarmStatus').textContent='Set gespeichert. Hinweis: Browser-Benachrichtigungen sind keine garantierten Wecker und können bei geschlossenem Browser ausbleiben.';
+};
+$('filterStage').onchange=render;
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));
+ document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===b.dataset.view));
+});
+['Main Stage','Dome','Pumpui','Dragon Nest','Andere'].forEach(s=>{const b=document.createElement('button');b.className='secondary';b.textContent=s;b.onclick=()=>{selectedStage=s;render();};$('stageButtons').appendChild(b);});
+$('locate').onclick=()=>{
+ if(!navigator.geolocation){$('gpsStatus').textContent='GPS/Standort wird in diesem Browser nicht unterstützt.';return;}
+ $('gpsStatus').textContent='Standort wird abgefragt …';
+ navigator.geolocation.getCurrentPosition(p=>{$('gpsStatus').textContent=`Standort gefunden: ${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)} · Genauigkeit ca. ${Math.round(p.coords.accuracy)} m. Diese Koordinaten werden nicht an einen Server gesendet.`;},e=>{$('gpsStatus').textContent='Standort nicht verfügbar: '+e.message+'. Prüfe die Standortberechtigung und verwende die App über eine sichere Verbindung.';},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+};
+let mapUrl=null;
+$('mapFile').onchange=e=>{const f=e.target.files[0];if(!f)return;if(mapUrl)URL.revokeObjectURL(mapUrl);mapUrl=URL.createObjectURL(f);$('mapImage').src=mapUrl;$('mapWrap').classList.remove('hidden');$('gpsStatus').textContent='Karte geladen. Für dauerhaftes Speichern bitte die Bilddatei beim nächsten Öffnen erneut auswählen.';};
+$('removeMap').onclick=()=>{$('mapImage').removeAttribute('src');$('mapWrap').classList.add('hidden');$('mapFile').value='';if(mapUrl)URL.revokeObjectURL(mapUrl);mapUrl=null;};
+$('timetableFile').onchange=e=>{const f=e.target.files[0];if(!f)return;$('importStatus').textContent=`Ausgewählt: ${f.name} · ${(f.size/1024/1024).toFixed(2)} MB. Diese Version liest die Acts noch nicht automatisch aus.`;$('filePreview').innerHTML='';if(f.type==='application/pdf'){const url=URL.createObjectURL(f);const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.textContent='PDF-Timetable öffnen';a.className='chip';a.style.display='inline-block';a.style.marginTop='10px';$('filePreview').appendChild(a);}else if(f.type.startsWith('image/')){const img=document.createElement('img');img.src=URL.createObjectURL(f);img.style='width:100%;border-radius:12px;margin-top:12px';img.alt='Timetable-Vorschau';$('filePreview').appendChild(img);}else if(f.name.toLowerCase().endsWith('.csv')){const r=new FileReader();r.onload=()=>{const pre=document.createElement('pre');pre.style='white-space:pre-wrap;overflow:auto;color:#ddd';pre.textContent=String(r.result).slice(0,6000);$('filePreview').appendChild(pre);};r.readAsText(f);}};
+const today=new Date();$('date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+render();
+</script>
+</body></html>
